@@ -1,0 +1,16 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FeedbackApi", "FeedbackApi\FeedbackApi.csproj", "{102406BA-A476-431E-A2DD-0611B40DB202}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{102406BA-A476-431E-A2DD-0611B40DB202}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{102406BA-A476-431E-A2DD-0611B40DB202}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{102406BA-A476-431E-A2DD-0611B40DB202}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{102406BA-A476-431E-A2DD-0611B40DB202}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

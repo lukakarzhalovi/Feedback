@@ -1,44 +1,83 @@
+using FeedbackApi.Data;
+using FeedbackApi.Endpoints;
+using FeedbackApi.Services;
+using FeedbackApi.Validators;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+// Add services to the container
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Feedback API",
+        Version = "v1",
+        Description = "MVP Review/Feedback service for apartment rentals"
+    });
+
+    // Add X-User-Id header authentication
+    options.AddSecurityDefinition("UserId", new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.ApiKey,
+        In = ParameterLocation.Header,
+        Name = "X-User-Id",
+        Description = "User ID (GUID) for authentication. Use one of the seeded users:\n" +
+                      "• John Doe: 11111111-1111-1111-1111-111111111111\n" +
+                      "• Jane Smith: 22222222-2222-2222-2222-222222222222\n" +
+                      "• Bob Wilson: 33333333-3333-3333-3333-333333333333"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "UserId"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
+
+// Configure EF Core In-Memory Database
+builder.Services.AddDbContext<FeedbackDbContext>(options =>
+    options.UseInMemoryDatabase("FeedbackDb"));
+
+// Register services
+builder.Services.AddScoped<IReviewService, ReviewService>();
+builder.Services.AddSingleton<ReviewValidator>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Seed the database
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<FeedbackDbContext>();
+    DataSeeder.Seed(context);
+}
+
+// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Feedback API v1");
+    });
 }
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-    {
-        var forecast = Enumerable.Range(1, 5).Select(index =>
-                new WeatherForecast
-                (
-                    DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                    Random.Shared.Next(-20, 55),
-                    summaries[Random.Shared.Next(summaries.Length)]
-                ))
-            .ToArray();
-        return forecast;
-    })
-    .WithName("GetWeatherForecast")
-    .WithOpenApi();
+// Map endpoints
+app.MapReviewEndpoints();
+app.MapApartmentEndpoints();
+app.MapUserEndpoints();
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

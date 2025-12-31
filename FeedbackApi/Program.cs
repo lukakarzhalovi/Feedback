@@ -4,10 +4,19 @@ using FeedbackApi.Services;
 using FeedbackApi.Validators;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using Serilog;
+
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .WriteTo.Console()
+    .WriteTo.Seq("http://localhost:5341")
+    .Enrich.FromLogContext()
+    .CreateLogger();
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container
+builder.Host.UseSerilog();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -18,7 +27,6 @@ builder.Services.AddSwaggerGen(options =>
         Description = "MVP Review/Feedback service for apartment rentals"
     });
 
-    // Add X-User-Id header authentication
     options.AddSecurityDefinition("UserId", new OpenApiSecurityScheme
     {
         Type = SecuritySchemeType.ApiKey,
@@ -46,24 +54,20 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// Configure EF Core In-Memory Database
 builder.Services.AddDbContext<FeedbackDbContext>(options =>
     options.UseInMemoryDatabase("FeedbackDb"));
 
-// Register services
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddSingleton<ReviewValidator>();
 
 var app = builder.Build();
 
-// Seed the database
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<FeedbackDbContext>();
     DataSeeder.Seed(context);
 }
 
-// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -75,7 +79,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Map endpoints
+app.UseSerilogRequestLogging();
+
 app.MapReviewEndpoints();
 app.MapApartmentEndpoints();
 app.MapUserEndpoints();
